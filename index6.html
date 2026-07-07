@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>종수 인생 2막 대시보드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #eef2f7;
+      min-height: 100vh;
+      padding: 32px 20px 48px;
+      color: #1e293b;
+    }
+    .page { max-width: 900px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 28px; }
+    .header h1 { font-size: 1.875rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .header p  { font-size: 0.9rem; color: #64748b; }
+    /* ── 페이지 네비 ── */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: #fff;
+      padding: 6px;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-tab:hover { background: #f1f5f9; color: #0f172a; }
+    .nav-tab.active { background: #2563eb; color: #fff; }
+    .nav-tab.active:hover { background: #1d4ed8; color: #fff; }
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06);
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .card-title.assets    { color: #059669; }
+    .card-title.debts     { color: #dc2626; }
+    .card-title.expenses  { color: #d97706; }
+    .card-title.goals     { color: #7c3aed; }
+    .card-title.ai        { color: #0891b2; }
+    .card-title.checklist { color: #be185d; }
+    .card-title.dashboard { color: #2563eb; border: none; padding: 0; margin-bottom: 20px; }
+    .card-title.news-ai   { color: #0891b2; }
+    .card-title.news-econ { color: #d97706; }
+    .card-title.briefing  { color: #7c3aed; }
+    .card-title.daily     { color: #be185d; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .input-wrapper { position: relative; }
+    .input-wrapper input {
+      width: 100%;
+      padding: 10px 44px 10px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+    }
+    .input-wrapper input:focus { outline: none; border-color: #3b82f6; }
+    input[type="date"] { padding-right: 12px; }
+    .unit {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8125rem;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9375rem;
+      cursor: pointer;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #2563eb;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checklist li.done span { color: #94a3b8; text-decoration: line-through; }
+    button[type="submit"],
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover,
+    .btn-primary:hover { background: #1d4ed8; }
+    .error {
+      margin-top: 12px;
+      padding: 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #b91c1c;
+      font-size: 0.875rem;
+      display: none;
+    }
+    .error.show { display: block; }
+    .dashboard { display: none; }
+    .dashboard.show { display: block; }
+    .score-hero {
+      background: linear-gradient(135deg, #312e81 0%, #6366f1 100%);
+      border-radius: 20px;
+      padding: 28px 32px;
+      color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+      text-align: center;
+    }
+    .score-label { font-size: 0.8125rem; font-weight: 600; opacity: 0.85; margin-bottom: 8px; }
+    .score-value { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    .score-unit   { font-size: 1.5rem; font-weight: 700; opacity: 0.9; }
+    .cheer-msg {
+      margin-top: 14px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+    }
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 560px) { .breakdown-grid { grid-template-columns: 1fr; } }
+    .breakdown-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .breakdown-weight { font-size: 0.6875rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+    .breakdown-name   { font-size: 0.75rem; color: #64748b; font-weight: 600; margin-bottom: 6px; }
+    .breakdown-score  { font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+    .hero-card {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      border-radius: 20px;
+      padding: 24px 28px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .hero-label { font-size: 0.8125rem; font-weight: 600; opacity: 0.85; margin-bottom: 6px; }
+    .hero-value { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+    .hero-sub   { margin-top: 8px; font-size: 0.8125rem; opacity: 0.8; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 700px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 420px) { .stat-grid { grid-template-columns: 1fr; } }
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .stat-card.wide { grid-column: span 2; }
+    @media (max-width: 700px) { .stat-card.wide { grid-column: span 1; } }
+    .stat-icon  { font-size: 1.25rem; margin-bottom: 8px; }
+    .stat-label { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+    .stat-value { font-size: 1.375rem; font-weight: 800; color: #0f172a; }
+    .stat-value.green  { color: #059669; }
+    .stat-value.red    { color: #dc2626; }
+    .stat-value.orange { color: #d97706; }
+    .stat-value.blue   { color: #2563eb; }
+    .stat-value.purple { color: #7c3aed; }
+    .stat-value.cyan   { color: #0891b2; }
+    .stat-sub { margin-top: 6px; font-size: 0.75rem; color: #94a3b8; }
+    .progress-wrap { margin-top: 10px; }
+    .progress-bar  { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+    .progress-fill.purple { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .progress-fill.pink   { background: linear-gradient(90deg, #db2777, #f472b6); }
+    .progress-fill.cyan   { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+    .progress-text { margin-top: 6px; font-size: 0.75rem; color: #64748b; }
+    .gangwon-card {
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 4px;
+    }
+    .gangwon-card.ok { background: #ecfdf5; border: 1.5px solid #6ee7b7; }
+    .gangwon-card.no { background: #fff7ed; border: 1.5px solid #fdba74; }
+    .gangwon-icon   { font-size: 2rem; flex-shrink: 0; }
+    .gangwon-title  { font-size: 0.8125rem; font-weight: 700; color: #475569; margin-bottom: 4px; }
+    .gangwon-result { font-size: 1.25rem; font-weight: 800; }
+    .gangwon-card.ok .gangwon-result { color: #059669; }
+    .gangwon-card.no .gangwon-result  { color: #ea580c; }
+    .gangwon-detail { margin-top: 4px; font-size: 0.8125rem; color: #64748b; }
+    .section-divider {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.08em;
+      margin: 20px 0 12px;
+    }
+    /* ── 메이 데일리 브리핑 ── */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 700px) { .news-grid { grid-template-columns: 1fr; } }
+    .news-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .news-tag {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .news-tag.openai     { background: #dcfce7; color: #166534; }
+    .news-tag.claude     { background: #fef3c7; color: #92400e; }
+    .news-tag.cursor     { background: #dbeafe; color: #1e40af; }
+    .news-tag.rate       { background: #fce7f3; color: #9d174d; }
+    .news-tag.realestate { background: #ffedd5; color: #c2410c; }
+    .news-tag.fx         { background: #e0e7ff; color: #3730a3; }
+    .news-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .news-summary {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .briefing-box {
+      background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%);
+      border: 1.5px solid #ddd6fe;
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+    .briefing-quote {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #5b21b6;
+      line-height: 1.6;
+    }
+    .briefing-date {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: #7c3aed;
+    }
+    .ai-score-card {
+      background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+      border-radius: 20px;
+      padding: 28px;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(8, 145, 178, 0.25);
+    }
+    .ai-score-label { font-size: 0.8125rem; font-weight: 600; opacity: 0.85; margin-bottom: 8px; }
+    .ai-score-value { font-size: 3rem; font-weight: 800; line-height: 1; }
+    .ai-score-unit  { font-size: 1.25rem; font-weight: 700; }
+    .ai-score-sub   { margin-top: 12px; font-size: 0.8125rem; opacity: 0.85; }
+    .ai-score-card .progress-bar { background: rgba(255, 255, 255, 0.3); margin-top: 16px; }
+    .ai-score-card .progress-fill { background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>종수 인생 2막 대시보드</h1>
+      <p>재무 · AI 성장 · 프로젝트 · 데일리 브리핑</p>
+    </header>
+    <nav class="nav-tabs">
+      <button type="button" class="nav-tab active" data-page="dashboard">📊 인생 2막 대시보드</button>
+      <button type="button" class="nav-tab" data-page="briefing">📰 메이 데일리 브리핑</button>
+    </nav>
+    <!-- ══════════════════════════════════════
+         탭 1: 인생 2막 대시보드
+         ══════════════════════════════════════ -->
+    <div id="page-dashboard" class="page-view active">
+      <form id="mainForm">
+        <section class="card">
+          <div class="card-title assets">자산</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="apartment">아파트 가치</label>
+              <div class="input-wrapper">
+                <input type="number" id="apartment" value="500000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="land">토지 투자 가치</label>
+              <div class="input-wrapper">
+                <input type="number" id="land" value="300000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="deposit">예금</label>
+              <div class="input-wrapper">
+                <input type="number" id="deposit" value="29000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-title debts">부채</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mortgage">주택담보대출</label>
+              <div class="input-wrapper">
+                <input type="number" id="mortgage" value="320000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="otherLoan">기타 대출</label>
+              <div class="input-wrapper">
+                <input type="number" id="otherLoan" value="45000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-title expenses">월 고정지출</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mortgagePay">월 주담대 상환액</label>
+              <div class="input-wrapper">
+                <input type="number" id="mortgagePay" value="1500000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="otherLoanPay">월 기타대출 상환액</label>
+              <div class="input-wrapper">
+                <input type="number" id="otherLoanPay" value="900000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="management">월 관리비</label>
+              <div class="input-wrapper">
+                <input type="number" id="management" value="300000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="telecom">월 통신비</label>
+              <div class="input-wrapper">
+                <input type="number" id="telecom" value="100000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-title goals">목표 설정</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="targetNet">목표 순자산</label>
+              <div class="input-wrapper">
+                <input type="number" id="targetNet" value="1000000000" min="1">
+                <span class="unit">원</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="gangwonTarget">강원도 집 구매 목표</label>
+              <div class="input-wrapper">
+                <input type="number" id="gangwonTarget" value="200000000" min="0">
+                <span class="unit">원</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-title ai">AI 성장 현황</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cursorProjects">Cursor 프로젝트 수</label>
+              <div class="input-wrapper">
+                <input type="number" id="cursorProjects" value="2" min="0">
+                <span class="unit">개</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="completedProjects">완성 프로젝트 수</label>
+              <div class="input-wrapper">
+                <input type="number" id="completedProjects" value="2" min="0">
+                <span class="unit">개</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="aiStartDate">AI 학습 시작일</label>
+              <div class="input-wrapper">
+                <input type="date" id="aiStartDate" value="2026-01-01">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="yearlyTarget">올해 목표 프로젝트 수</label>
+              <div class="input-wrapper">
+                <input type="number" id="yearlyTarget" value="10" min="1">
+                <span class="unit">개</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-title checklist">올해 목표 체크리스트</div>
+          <ul class="checklist" id="checklist">
+            <li class="done"><input type="checkbox" id="chk1" checked><span>대출 계산기 완성</span></li>
+            <li class="done"><input type="checkbox" id="chk2" checked><span>자산 현황판 완성</span></li>
+            <li><input type="checkbox" id="chk3"><span>메이 대시보드</span></li>
+            <li><input type="checkbox" id="chk4"><span>뉴스 자동화</span></li>
+            <li><input type="checkbox" id="chk5"><span>강원도 이주 계획서</span></li>
+            <li><input type="checkbox" id="chk6"><span>Github 포트폴리오</span></li>
+          </ul>
+        </section>
+        <button type="submit">현황 계산하기</button>
+        <div class="error" id="error"></div>
+      </form>
+      <section class="dashboard" id="dashboard">
+        <div class="card">
+          <div class="card-title dashboard">🌟 인생 2막 종합 현황</div>
+          <div class="score-hero">
+            <div class="score-label">인생 2막 종합 점수</div>
+            <div>
+              <span class="score-value" id="totalScore">-</span>
+              <span class="score-unit">점</span>
+            </div>
+            <div class="cheer-msg" id="cheerMsg">-</div>
+          </div>
+          <div class="breakdown-grid">
+            <div class="breakdown-card">
+              <div class="breakdown-weight">가중치 40%</div>
+              <div class="breakdown-name">💰 재무 점수</div>
+              <div class="breakdown-score" id="financeScore">-</div>
+            </div>
+            <div class="breakdown-card">
+              <div class="breakdown-weight">가중치 30%</div>
+              <div class="breakdown-name">🤖 AI 학습 점수</div>
+              <div class="breakdown-score" id="aiScore">-</div>
+            </div>
+            <div class="breakdown-card">
+              <div class="breakdown-weight">가중치 30%</div>
+              <div class="breakdown-name">🚀 프로젝트 점수</div>
+              <div class="breakdown-score" id="projectScore">-</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-divider">AI · 프로젝트 현황</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-icon">🤖</div>
+              <div class="stat-label">AI 프로젝트 목표 달성률</div>
+              <div class="stat-value cyan" id="aiTargetRate">-</div>
+              <div class="stat-sub" id="aiTargetSub">-</div>
+              <div class="progress-wrap">
+                <div class="progress-bar">
+                  <div class="progress-fill cyan" id="aiProgressFill" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="stat-card wide">
+              <div class="stat-icon">✅</div>
+              <div class="stat-label">올해 목표 체크리스트 진행률</div>
+              <div class="stat-value purple" id="checklistRate">-</div>
+              <div class="stat-sub" id="checklistSub">-</div>
+              <div class="progress-wrap">
+                <div class="progress-bar">
+                  <div class="progress-fill pink" id="checklistFill" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-divider">재무 현황</div>
+          <div class="hero-card">
+            <div class="hero-label">순자산</div>
+            <div class="hero-value" id="heroNet">-</div>
+            <div class="hero-sub" id="heroSub">-</div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-icon">💰</div>
+              <div class="stat-label">총 자산</div>
+              <div class="stat-value green" id="totalAssets">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📉</div>
+              <div class="stat-label">총 부채</div>
+              <div class="stat-value red" id="totalDebts">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-label">부채비율</div>
+              <div class="stat-value orange" id="debtRatio">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">💸</div>
+              <div class="stat-label">월 고정지출</div>
+              <div class="stat-value" id="monthlyExpense">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⏳</div>
+              <div class="stat-label">예금 생존기간</div>
+              <div class="stat-value blue" id="survivalMonths">-</div>
+            </div>
+            <div class="stat-card wide">
+              <div class="stat-icon">🎯</div>
+              <div class="stat-label">목표 순자산 달성률</div>
+              <div class="stat-value purple" id="targetRate">-</div>
+              <div class="progress-wrap">
+                <div class="progress-bar">
+                  <div class="progress-fill purple" id="progressFill" style="width:0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="gangwon-card" id="gangwonCard">
+            <div class="gangwon-icon" id="gangwonIcon">🏠</div>
+            <div>
+              <div class="gangwon-title">강원도 집 구매 가능 여부</div>
+              <div class="gangwon-result" id="gangwonResult">-</div>
+              <div class="gangwon-detail" id="gangwonDetail">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <!-- ══════════════════════════════════════
+         탭 2: 메이 데일리 브리핑
+         ══════════════════════════════════════ -->
+    <div id="page-briefing" class="page-view">
+      <section class="card">
+        <div class="card-title news-ai">🤖 AI 뉴스</div>
+        <div class="news-grid">
+          <div class="news-card">
+            <span class="news-tag openai">OpenAI</span>
+            <div class="news-title">GPT-5 출시 임박, 추론 성능 대폭 향상</div>
+            <div class="news-summary">OpenAI가 차세대 모델 GPT-5를 하반기 출시 예정. 코딩·수학 벤치마크에서 기존 대비 2배 성능 개선.</div>
+          </div>
+          <div class="news-card">
+            <span class="news-tag claude">Claude</span>
+            <div class="news-title">Anthropic, Claude 4 Pro 업데이트</div>
+            <div class="news-summary">Claude 4 Pro가 긴 문서 분석과 코드 리뷰 능력을 강화. 100만 토큰 컨텍스트 지원 확대.</div>
+          </div>
+          <div class="news-card">
+            <span class="news-tag cursor">Cursor</span>
+            <div class="news-title">Cursor 2.0, 멀티 에이전트 기능 공개</div>
+            <div class="news-summary">Cursor가 여러 AI 에이전트를 동시에 실행하는 Agent Mode를 정식 출시. 프로젝트 자동화 수준 향상.</div>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-title news-econ">📈 경제 뉴스</div>
+        <div class="news-grid">
+          <div class="news-card">
+            <span class="news-tag rate">금리</span>
+            <div class="news-title">한국은행, 기준금리 2.50% 동결</div>
+            <div class="news-summary">물가 안정세를 고려해 금리 동결 결정. 시장은 하반기 0.25%p 인하 가능성 주목.</div>
+          </div>
+          <div class="news-card">
+            <span class="news-tag realestate">부동산</span>
+            <div class="news-title">수도권 아파트, 3개월 연속 상승</div>
+            <div class="news-summary">서울 강남·마포권 중심으로 거래량 증가. 전국 아파트값 전월 대비 0.3% 상승.</div>
+          </div>
+          <div class="news-card">
+            <span class="news-tag fx">환율</span>
+            <div class="news-title">원·달러 환율 1,380원대 진입</div>
+            <div class="news-summary">미국 경기 지표 호조로 달러 강세 지속. 수출 기업에는 호재, 수입 물가 부담 증가.</div>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-title briefing">💬 종수 한줄 브리핑</div>
+        <div class="briefing-box">
+          <div class="briefing-quote">"오늘은 AI 학습에 집중하는 것이 좋습니다."</div>
+          <div class="briefing-date" id="briefingDate"></div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-title daily">✅ 오늘의 할 일</div>
+        <ul class="checklist" id="dailyTodo">
+          <li><input type="checkbox" id="todo1"><span>ChatGPT 사용</span></li>
+          <li><input type="checkbox" id="todo2"><span>Claude 사용</span></li>
+          <li><input type="checkbox" id="todo3"><span>Cursor 사용</span></li>
+          <li><input type="checkbox" id="todo4"><span>AI 프로젝트 진행</span></li>
+        </ul>
+      </section>
+      <section class="card">
+        <div class="ai-score-card">
+          <div class="ai-score-label">오늘의 AI 점수</div>
+          <div>
+            <span class="ai-score-value" id="aiDailyScore">0</span>
+            <span class="ai-score-unit">점</span>
+          </div>
+          <div class="ai-score-sub" id="aiDailySub">할 일 0 / 4 완료</div>
+          <div class="progress-wrap">
+            <div class="progress-bar">
+              <div class="progress-fill" id="aiDailyFill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script>
+    /* ── 탭 전환 ── */
+    document.querySelectorAll(".nav-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        document.querySelectorAll(".nav-tab").forEach(function (t) {
+          t.classList.remove("active");
+        });
+        document.querySelectorAll(".page-view").forEach(function (p) {
+          p.classList.remove("active");
+        });
+        tab.classList.add("active");
+        document.getElementById("page-" + tab.dataset.page).classList.add("active");
+      });
+    });
+    /* ── 체크리스트 UI (대시보드) ── */
+    document.querySelectorAll("#checklist li").forEach(function (li) {
+      li.addEventListener("click", function (e) {
+        if (e.target.tagName !== "INPUT") {
+          var cb = li.querySelector("input");
+          cb.checked = !cb.checked;
+        }
+        li.classList.toggle("done", li.querySelector("input").checked);
+      });
+      li.querySelector("input").addEventListener("change", function () {
+        li.classList.toggle("done", this.checked);
+      });
+    });
+    /* ── 대시보드 계산 ── */
+    var form = document.getElementById("mainForm");
+    var dashboard = document.getElementById("dashboard");
+    var errorBox = document.getElementById("error");
+    function getNum(id) {
+      var v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) || v < 0 ? null : v;
+    }
+    function formatWon(n) {
+      return Math.round(n).toLocaleString("ko-KR") + "원";
+    }
+    function formatMonths(m) {
+      return isFinite(m) ? m.toFixed(1) + "개월" : "계산 불가";
+    }
+    function formatPct(n) {
+      return n.toFixed(1) + "%";
+    }
+    function clamp(v, min, max) {
+      return Math.min(Math.max(v, min), max);
+    }
+    function getCheerMsg(score) {
+      if (score >= 80) return "훌륭합니다. 계획대로 진행 중입니다.";
+      if (score >= 50) return "좋습니다. 꾸준히 진행 중입니다.";
+      return "조급해하지 말고 하나씩 완성하세요.";
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      errorBox.classList.remove("show");
+      var apartment         = getNum("apartment");
+      var land              = getNum("land");
+      var deposit           = getNum("deposit");
+      var mortgage          = getNum("mortgage");
+      var otherLoan         = getNum("otherLoan");
+      var mortgagePay       = getNum("mortgagePay");
+      var otherLoanPay      = getNum("otherLoanPay");
+      var management        = getNum("management");
+      var telecom           = getNum("telecom");
+      var gangwonTarget     = getNum("gangwonTarget");
+      var cursorProjects    = getNum("cursorProjects");
+      var completedProjects = getNum("completedProjects");
+      var yearlyTarget      = parseFloat(document.getElementById("yearlyTarget").value);
+      var targetNet         = parseFloat(document.getElementById("targetNet").value);
+      var aiStartDate       = document.getElementById("aiStartDate").value;
+      var fields = [
+        apartment, land, deposit, mortgage, otherLoan,
+        mortgagePay, otherLoanPay, management, telecom,
+        gangwonTarget, cursorProjects, completedProjects
+      ];
+      if (
+        fields.some(function (v) { return v === null; }) ||
+        isNaN(targetNet) || targetNet <= 0 ||
+        isNaN(yearlyTarget) || yearlyTarget <= 0 ||
+        !aiStartDate
+      ) {
+        errorBox.textContent = "모든 항목에 올바른 값을 입력해 주세요.";
+        errorBox.classList.add("show");
+        return;
+      }
+      if (completedProjects > cursorProjects) {
+        errorBox.textContent = "완성 프로젝트 수는 Cursor 프로젝트 수를 초과할 수 없습니다.";
+        errorBox.classList.add("show");
+        return;
+      }
+      var totalAssets    = apartment + land + deposit;
+      var totalDebts     = mortgage + otherLoan;
+      var netAssets      = totalAssets - totalDebts;
+      var monthlyExpense = mortgagePay + otherLoanPay + management + telecom;
+      var survivalMonths = monthlyExpense > 0 ? deposit / monthlyExpense : Infinity;
+      var debtRatio      = totalAssets > 0 ? (totalDebts / totalAssets) * 100 : 0;
+      var targetRateVal  = (netAssets / targetNet) * 100;
+      var aiTargetRate = (completedProjects / yearlyTarget) * 100;
+      var startDate    = new Date(aiStartDate);
+      var today        = new Date();
+      var daysSince    = Math.max(0, Math.floor((today - startDate) / 86400000));
+      var aiLearnScore = clamp((daysSince / 365) * 100, 0, 100);
+      var checkboxes    = document.querySelectorAll("#checklist input[type=checkbox]");
+      var checkedCount  = Array.from(checkboxes).filter(function (c) { return c.checked; }).length;
+      var checklistRate = (checkedCount / checkboxes.length) * 100;
+      var financeScoreVal = clamp(targetRateVal, 0, 100);
+      var projectScoreVal = clamp(aiTargetRate, 0, 100);
+      var totalScoreVal   = financeScoreVal * 0.4 + aiLearnScore * 0.3 + projectScoreVal * 0.3;
+      document.getElementById("totalScore").textContent     = totalScoreVal.toFixed(1);
+      document.getElementById("cheerMsg").textContent      = getCheerMsg(totalScoreVal);
+      document.getElementById("financeScore").textContent   = financeScoreVal.toFixed(1) + "점";
+      document.getElementById("aiScore").textContent        = aiLearnScore.toFixed(1) + "점";
+      document.getElementById("projectScore").textContent   = projectScoreVal.toFixed(1) + "점";
+      document.getElementById("aiTargetRate").textContent = formatPct(aiTargetRate);
+      document.getElementById("aiTargetSub").textContent  =
+        "완성 " + completedProjects + "개 / 목표 " + yearlyTarget + "개  ·  학습 " + daysSince + "일째";
+      document.getElementById("aiProgressFill").style.width = clamp(aiTargetRate, 0, 100) + "%";
+      document.getElementById("checklistRate").textContent = formatPct(checklistRate);
+      document.getElementById("checklistSub").textContent  =
+        checkedCount + " / " + checkboxes.length + " 완료";
+      document.getElementById("checklistFill").style.width = checklistRate + "%";
+      document.getElementById("heroNet").textContent        = formatWon(netAssets);
+      document.getElementById("heroSub").textContent        =
+        "총 자산 " + formatWon(totalAssets) + "  ·  총 부채 " + formatWon(totalDebts);
+      document.getElementById("totalAssets").textContent    = formatWon(totalAssets);
+      document.getElementById("totalDebts").textContent     = formatWon(totalDebts);
+      document.getElementById("debtRatio").textContent      = formatPct(debtRatio);
+      document.getElementById("monthlyExpense").textContent = formatWon(monthlyExpense);
+      document.getElementById("survivalMonths").textContent = formatMonths(survivalMonths);
+      document.getElementById("targetRate").textContent     = formatPct(targetRateVal);
+      document.getElementById("progressFill").style.width = clamp(targetRateVal, 0, 100) + "%";
+      document.getElementById("progressText").textContent   =
+        "목표 " + formatWon(targetNet) + "  →  현재 " + formatWon(netAssets) +
+        (targetRateVal >= 100 ? "  ✅ 달성!" : "  (남은 " + formatWon(Math.max(targetNet - netAssets, 0)) + ")");
+      var gangwonCard   = document.getElementById("gangwonCard");
+      var gangwonResult = document.getElementById("gangwonResult");
+      var gangwonDetail = document.getElementById("gangwonDetail");
+      var gangwonIcon   = document.getElementById("gangwonIcon");
+      if (deposit >= gangwonTarget) {
+        gangwonCard.className = "gangwon-card ok";
+        gangwonIcon.textContent = "✅";
+        gangwonResult.textContent = "구매 가능!";
+        gangwonDetail.textContent =
+          "예금 " + formatWon(deposit) + "  ≥  목표 " + formatWon(gangwonTarget) +
+          "  (여유 " + formatWon(deposit - gangwonTarget) + ")";
+      } else {
+        gangwonCard.className = "gangwon-card no";
+        gangwonIcon.textContent = "⚠️";
+        gangwonResult.textContent = "아직 부족합니다";
+        gangwonDetail.textContent =
+          "부족 금액 " + formatWon(gangwonTarget - deposit) +
+          "  (예금 " + formatWon(deposit) + " / 목표 " + formatWon(gangwonTarget) + ")";
+      }
+      dashboard.classList.add("show");
+      dashboard.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    /* ── 메이 데일리 브리핑 ── */
+    var todayDate = new Date();
+    document.getElementById("briefingDate").textContent =
+      todayDate.getFullYear() + "년 " +
+      (todayDate.getMonth() + 1) + "월 " +
+      todayDate.getDate() + "일 브리핑";
+    function updateDailyScore() {
+      var todos = document.querySelectorAll("#dailyTodo input[type=checkbox]");
+      var done  = Array.from(todos).filter(function (c) { return c.checked; }).length;
+      var score = Math.round((done / todos.length) * 100);
+      document.getElementById("aiDailyScore").textContent = score;
+      document.getElementById("aiDailySub").textContent   = "할 일 " + done + " / " + todos.length + " 완료";
+      document.getElementById("aiDailyFill").style.width  = score + "%";
+    }
+    document.querySelectorAll("#dailyTodo li").forEach(function (li) {
+      li.addEventListener("click", function (e) {
+        if (e.target.tagName !== "INPUT") {
+          li.querySelector("input").checked = !li.querySelector("input").checked;
+        }
+        li.classList.toggle("done", li.querySelector("input").checked);
+        updateDailyScore();
+      });
+      li.querySelector("input").addEventListener("change", function () {
+        li.classList.toggle("done", this.checked);
+        updateDailyScore();
+      });
+    });
+    updateDailyScore();
+  </script>
+</body>
+</html>
